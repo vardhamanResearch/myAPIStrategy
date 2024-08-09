@@ -1,6 +1,4 @@
-//code will begin from here
-
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -19,11 +17,24 @@ struct OptionData {
     //other imp data
 };
 
+// Enum for exit conditions
+enum class ExitCondition {
+    TakeProfit,
+    StopLoss,
+    Wait,
+    RollOnStrike,
+    RollOnExpiry,
+    AddMore,
+    PartialClose,
+    DiffStrategy,
+    Hedge
+};
+
 // Class to manage the Butterfly Strategy
 class CallButterflyStrategy{
 public:
-    CallButterflyStrategy(string& symbol, double maxDebit, double takeProfit, double stopLoss , double strikediff)
-        : symbol(symbol), maxDebit(maxDebit), takeProfit(takeProfit), stopLoss(stopLoss), strikediff(strikediff) {}
+    CallButterflyStrategy(string symbol, double maxDebit, double takeProfit, double stopLoss , double strikediff , ExitCondition exitcondition)
+        : symbol(symbol), maxDebit(maxDebit), takeProfit(takeProfit), stopLoss(stopLoss), strikediff(strikediff), exitCondition(exitCondition) {}
 
     void executeStrategy() {
         vector<OptionData> options = fetchOptionsData(symbol);
@@ -59,6 +70,7 @@ private:
     double takeProfit;
     double stopLoss;
     double strikediff;
+    ExitCondition exitCondition;
 
     vector<OptionData> fetchOptionsData(string& symbol){
         //get the data from api
@@ -81,19 +93,48 @@ private:
             }
 
             double currentValue = lowerStrikeCall.price + upperStrikeCall.price - 2 * middleStrikeCall.price;
-            if (currentValue >= takeProfit) {
-                cout << "Exiting trade with profit. Current value: " << currentValue << endl;
-                // Exit trades 
-                //api integration
-                tradeActive = false;
-            } else if (currentValue <= stopLoss) {
-                cout << "Exiting trade with stop loss. Current value: " << currentValue << endl;
-                // Exit trades 
-                // api integration
-                tradeActive = false;
+
+            switch (exitCondition) {
+                case ExitCondition::Wait:
+                    tradeActive = true;
+                    break;
+                case ExitCondition::TakeProfit:
+                    if (currentValue >= takeProfit) {
+                        cout << "Exiting trade with profit. Current value: " << currentValue << endl;
+                        tradeActive = false;
+                    } 
+                    break;
+                case ExitCondition::StopLoss:
+                    if (currentValue <= stopLoss) {
+                        cout << "Exiting trade with stop loss. Current value: " << currentValue << endl;
+                        tradeActive = false;
+                    }
+                    break;
+                case ExitCondition::RollOnStrike:
+                    // Another exit condition according to the data
+                    break;
+                case ExitCondition::RollOnExpiry:
+                    // Another exit condition according to the data
+                    break;
+                case ExitCondition::AddMore:
+                    // Another exit condition
+                    break;
+                case ExitCondition::PartialClose:
+                    // Another exit condition
+                    break;
+                case ExitCondition::DiffStrategy:
+                    // Another exit condition
+                    break;
+                case ExitCondition::Hedge:
+                    // Another exit condition
+                    break;
+                default:
+                    cout << "Invalid exit condition." << endl;
+                    tradeActive = true;
+                    break;
             }
 
-            this_thread::sleep_for(chrono::seconds(1)); // Short sleep to prevent overloading the API
+            this_thread::sleep_for(chrono::seconds(5)); // Short sleep to prevent overloading the API
         }
     }
 };
@@ -104,8 +145,9 @@ int main() {
     double takeProfit = 50; 
     double stopLoss = 10; 
     double strikediff = 100;
+    ExitCondition exitCondition = ExitCondition::TakeProfit;
 
-    CallButterflyStrategy strategy(symbol, maxDebit, takeProfit, stopLoss , strikediff);
+    CallButterflyStrategy strategy(symbol, maxDebit, takeProfit, stopLoss , strikediff , exitCondition);
     strategy.executeStrategy();
 
     return 0;
